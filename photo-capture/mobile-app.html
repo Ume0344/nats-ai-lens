@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture Photo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+        h2 {
+            color: #2d2d2d;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        #video {
+            border: 5px solid #9b59b6; /* Lavender border */
+            border-radius: 10px;
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #9b59b6; /* Lavender button */
+            color: white;
+            padding: 15px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+            max-width: 200px;
+        }
+        button:hover {
+            background-color: #8e44ad; /* Darker lavender */
+        }
+        #capture-result {
+            display: none;
+            margin-top: 20px;
+            border: 5px solid #9b59b6;
+            border-radius: 10px;
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h2>Capture a Photo</h2>
+
+    <!-- Container to center the content -->
+    <div class="container">
+        <!-- Live camera preview -->
+        <video id="video" autoplay></video>
+
+        <!-- Button to capture photo -->
+        <button id="capture">📸 Capture Photo</button>
+
+        <!-- Display captured photo -->
+        <img id="capture-result" alt="Captured Photo">
+
+        <!-- Display result message -->
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function initCamera() {
+            try {
+                // Request camera access
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById("video").srcObject = stream;
+            } catch (error) {
+                alert("Camera access denied: " + error);
+            }
+        }
+
+        // Capture photo functionality
+        document.getElementById("capture").addEventListener("click", () => {
+            const video = document.getElementById("video");
+            const captureResult = document.getElementById("capture-result");
+
+            // Create a canvas to draw the current frame from the video
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+
+            // Set canvas size to match video dimensions
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw the current frame of the video to the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the canvas content to an image
+            const dataUrl = canvas.toDataURL("image/png");
+
+            // Display the captured image
+            captureResult.src = dataUrl;
+            captureResult.style.display = "block";
+
+            // Display a message after capture
+            document.getElementById("result").textContent = "Photo Captured! 🎉";
+        });
+
+        window.onload = initCamera;
+    </script>
+</body>
+</html>
