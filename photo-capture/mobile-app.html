@@ -3,85 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capture Photo</title>
+    <title>Image Capture Through NATS</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7f6;
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             padding: 20px;
-            color: #333;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
+            animation: glow 2s infinite alternate;
+            margin-bottom: 10px;
         }
         h2 {
-            color: #2d2d2d;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
             margin-bottom: 20px;
         }
         .container {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            margin-top: 20px;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
         }
-        #video {
-            border: 5px solid #9b59b6; /* Lavender border */
+        #video, #capture-result {
+            width: 100%;
             border-radius: 10px;
-            max-width: 100%;
-            margin-bottom: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
-        button {
-            background-color: #9b59b6; /* Lavender button */
+        #capture {
+            background: linear-gradient(45deg, #ff00ff, #7700ff);
             color: white;
             padding: 15px 25px;
             font-size: 16px;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: background-color 0.3s;
             margin-top: 20px;
-            max-width: 200px;
+            transition: 0.3s;
+            box-shadow: 0 0 10px #ff00ff;
         }
-        button:hover {
-            background-color: #8e44ad; /* Darker lavender */
+        #capture:hover {
+            box-shadow: 0 0 15px #ff00ff, 0 0 25px #7700ff;
+            transform: scale(1.05);
         }
         #capture-result {
             display: none;
             margin-top: 20px;
-            border: 5px solid #9b59b6;
-            border-radius: 10px;
-            max-width: 100%;
-            margin-bottom: 20px;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+        .loading {
+            width: 40px;
+            height: 40px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-top: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes glow {
+            0% { text-shadow: 0 0 15px rgba(255, 0, 255, 0.6); }
+            100% { text-shadow: 0 0 25px rgba(255, 0, 255, 1); }
         }
         #result {
-            margin-top: 20px;
             font-size: 18px;
             font-weight: bold;
-            color: #333;
+            margin-top: 20px;
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.6);
         }
     </style>
 </head>
 <body>
-    <h2>Capture a Photo</h2>
+    <h1>🚀 Image Capture Through NATS</h1>
+    <h2>📸 Capture a Photo</h2>
 
-    <!-- Container to center the content -->
     <div class="container">
-        <!-- Live camera preview -->
         <video id="video" autoplay></video>
-
-        <!-- Button to capture photo -->
-        <button id="capture">📸 Capture Photo</button>
-
-        <!-- Display captured photo -->
+        <button id="capture">Capture Photo</button>
+        <div class="loading"></div>
         <img id="capture-result" alt="Captured Photo">
-
-        <!-- Display result message -->
         <div id="result"></div>
     </div>
 
     <script>
         async function initCamera() {
             try {
-                // Request camera access
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 document.getElementById("video").srcObject = stream;
             } catch (error) {
@@ -89,31 +121,28 @@
             }
         }
 
-        // Capture photo functionality
         document.getElementById("capture").addEventListener("click", () => {
             const video = document.getElementById("video");
             const captureResult = document.getElementById("capture-result");
+            const loading = document.querySelector(".loading");
+            const resultText = document.getElementById("result");
 
-            // Create a canvas to draw the current frame from the video
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
+            loading.style.display = "block";
+            resultText.textContent = "";
 
-            // Set canvas size to match video dimensions
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            setTimeout(() => {
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                captureResult.src = canvas.toDataURL("image/png");
+                captureResult.style.display = "block";
+                captureResult.style.opacity = 1;
 
-            // Draw the current frame of the video to the canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Convert the canvas content to an image
-            const dataUrl = canvas.toDataURL("image/png");
-
-            // Display the captured image
-            captureResult.src = dataUrl;
-            captureResult.style.display = "block";
-
-            // Display a message after capture
-            document.getElementById("result").textContent = "Photo Captured! 🎉";
+                loading.style.display = "none";
+                resultText.textContent = "📷 Photo Captured!";
+            }, 2000); // Simulate upload time
         });
 
         window.onload = initCamera;
