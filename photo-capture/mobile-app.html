@@ -67,22 +67,6 @@
             box-shadow: 0 0 15px #ff00ff, 0 0 25px #7700ff;
             transform: scale(1.05);
         }
-        #capture-result {
-            display: none;
-            margin-top: 20px;
-            opacity: 0;
-            transition: opacity 0.8s ease-in-out;
-        }
-        .loading {
-            width: 40px;
-            height: 40px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top: 5px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: none;
-            margin-top: 20px;
-        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -100,18 +84,37 @@
     </style>
 </head>
 <body>
-    <h1>🚀 Image Capture Through NATS</h1>
+    <h1>🚀 NATS Image Capture</h1>
     <h2>📸 Capture a Photo</h2>
 
     <div class="container">
         <video id="video" autoplay></video>
-        <button id="capture">Capture Photo</button>
-        <div class="loading"></div>
-        <img id="capture-result" alt="Captured Photo">
+        <button id="capture">Capture & Send</button>
         <div id="result"></div>
     </div>
 
-    <script>
+    <script type="module">
+        import { wsconnect, credsAuthenticator } from "https://esm.run/@nats-io/nats-core";
+
+        let nc;
+        const subject = "ai.lens.images";
+        
+        const creds = `` // Add your creds here
+
+        const authenticator = credsAuthenticator(new TextEncoder().encode(creds));
+
+        async function connectToNATS() {
+            try {
+                nc = await wsconnect({
+                    servers: "wss://connect.ngs.global",
+                    authenticator,
+                });
+                console.log("✅ Connected to NATS");
+            } catch (error) {
+                console.error("❌ NATS Connection Error:", error);
+            }
+        }
+
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -121,31 +124,31 @@
             }
         }
 
-        document.getElementById("capture").addEventListener("click", () => {
+        document.getElementById("capture").addEventListener("click", async () => {
             const video = document.getElementById("video");
-            const captureResult = document.getElementById("capture-result");
-            const loading = document.querySelector(".loading");
-            const resultText = document.getElementById("result");
 
-            loading.style.display = "block";
-            resultText.textContent = "";
-
-            setTimeout(() => {
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                captureResult.src = canvas.toDataURL("image/png");
-                captureResult.style.display = "block";
-                captureResult.style.opacity = 1;
-
-                loading.style.display = "none";
-                resultText.textContent = "📷 Photo Captured!";
-            }, 2000); // Simulate upload time
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL("image/png");
+            if (nc) {
+                try {
+                    await nc.publish(subject, imageData); 
+                    console.log("✅ Image Published to NATS");
+                } catch (error) {
+                    console.error("❌ NATS Publish Error:", error);
+                }
+            } else {
+                console.error("❌ NATS is not connected!");
+            }
         });
 
-        window.onload = initCamera;
+        window.onload = async () => {
+            await connectToNATS();
+            initCamera();
+        };
     </script>
 </body>
 </html>
